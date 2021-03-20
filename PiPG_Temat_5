@@ -1,0 +1,77 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+os.chdir(r'C:\aa_sem_i\PiPG_I\temat_5\dane_wejsciowe')
+from ipywidgets import FloatSlider as Slider
+from ipywidgets import IntSlider as Slider_int
+from ipywidgets import interact, Layout
+from IPython.display import display
+from ipywidgets import interactive
+
+
+# obliczenia
+def data(a, e, i, M_0, Om_0, om, interval):
+    
+    dt = np.arange(0,3600*24+1,60*interval)
+    
+    n = np.sqrt(GM / a ** 3)
+    M = M_0 + n * dt
+
+    def obl_E(E, E0, M, e):
+        while abs(E - E0) > 10 ** -10:
+            E0 = E
+            E = M + e * np.sin(E)
+        return E
+
+    E_array = []
+
+    for M_P in M:
+        E = obl_E(0, 0.2, M_P, e)
+        E_array.append(E)
+
+    E = np.array(E_array)
+    v = np.arctan2(np.sqrt(1 - e ** 2) * np.sin(E), np.cos(E) - e)
+    u = v + om
+    r = a * (1 - e * np.cos(E))
+    xp = r * np.cos(u)
+    yp = r * np.sin(u)
+    OM = Om_0 - om_e * dt
+    x = xp * np.cos(OM) - yp * np.cos(i) * np.sin(OM)
+    y = xp * np.sin(OM) + yp * np.cos(i) * np.cos(OM)
+    z = yp * np.sin(i)
+
+    ro = 180 / np.pi
+
+    p = np.sqrt(x * x + y * y)
+    fi = ro * np.arctan2(z, p)
+    la = ro * np.arctan2(y, x)
+    
+    img = plt.imread('_earth.jpg')
+
+    plt.figure(figsize=(15,8))
+    #plt.title('Wpływ parametrów orbity na trajektorię satelity',fontsize = 18, pad = 20)
+    #plt.xlabel('$λ_0$',fontsize = 15)
+    #plt.ylabel('$φ_0$', fontsize = 15)
+    #skalowanie tla
+    plt.imshow(img, extent=(-180,180,-90,90))
+    #trajektoria satelity i miejscowosc
+    plt.plot(la,fi, 'oy', label = 'lokalizacja satelity, interwał 15 minut', markersize = 5)
+    #plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
+    
+    # definicja suwaków do wartości parametrów wejściowych
+
+lay = Layout(width='80%', height='15px')
+slider_a = Slider(value=26555000, min=0.00, max=50000000, step=5, description='a', layout=lay)
+slider_e = Slider(value=0.072, min=0, max=1, step=0.000000001, description='e', layout=lay)
+slider_i = Slider(value=63.4, min=-90, max=90, step=0.1, description='i', layout=lay)
+slider_M0 = Slider(value=60, min=-90, max=90, step=0.1, description='M0', layout=lay)
+slider_OMEGA0 = Slider(value=90, min=0, max=180, step=0.1, description='OMEGA0', layout=lay)
+slider_omega = Slider(value=90, min=-360, max=360, step=0.1, description='omega', layout=lay)
+slider_interval = Slider_int(value=15, min=1, max=60, step=1, description='dt', layout=lay)
+
+# wywołanie funkcji z paraametrami ustawionymi na suwakach
+interact(data, a=slider_a, e=slider_e, i=slider_i, M_0=slider_M0, Om_0=slider_OMEGA0, om=slider_omega,
+         interval=slider_interval)
